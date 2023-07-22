@@ -138,7 +138,10 @@ zulip:
     SETTING_EMAIL_PORT: "587"
     SETTING_EMAIL_USE_SSL: "False"
     SETTING_EMAIL_USE_TLS: "True"
+    # -- Keep this backend enabled, it is vital for initial user setup
     ZULIP_AUTH_BACKENDS: "EmailAuthBackend"
+    # -- Default allow all private 10.0.0.0/8 range IPs and localhost to act as proxy
+    LOADBALANCER_IPS: "127.0.0.1, 10.0.0.0/8"
   # -- If `persistence.existingClaim` is not set, a PVC is generated with these
   # specifications.
   persistence:
@@ -181,7 +184,7 @@ postSetup:
 postgresql:
   primary:
     containerSecurityContext:
-      runAsUser: 0
+      runAsUser: 0 ## if not set, custom zulip-postgresql container won't run
   # We need to override the Postgresql image to get all the plugins Zulip needs
   image:
     repository: zulip/zulip-postgresql
