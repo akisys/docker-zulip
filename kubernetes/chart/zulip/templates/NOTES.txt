@@ -5,4 +5,4 @@
 
 2. Zulip will be available on:
 
-  https://{{ .host }}
+  https://{{ .Values.zulip.environment.SETTING_EXTERNAL_HOST }}
