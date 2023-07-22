@@ -57,11 +57,13 @@ spec:
           {{- if .Values.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
-              path: /
+              path: /new/
               port: http
               httpHeaders:
               - name: Host
                 value: {{ .Values.zulip.environment.SETTING_EXTERNAL_HOST | quote }}
+              - name: X-Forwarded-Proto
+                value: http
             initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
@@ -71,11 +73,13 @@ spec:
           {{- if .Values.startupProbe.enabled }}
           startupProbe:
             httpGet:
-              path: /
+              path: /new/
               port: http
               httpHeaders:
               - name: Host
                 value: {{ .Values.zulip.environment.SETTING_EXTERNAL_HOST | quote }}
+              - name: X-Forwarded-Proto
+                value: http
             initialDelaySeconds: {{ .Values.startupProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.startupProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.startupProbe.timeoutSeconds }}
