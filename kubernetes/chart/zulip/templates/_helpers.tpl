@@ -70,7 +70,11 @@ include all env variables for Zulip pods
 - name: DB_HOST_PORT
   value: "{{ template "postgresql.service.port" .Subcharts.postgresql }}"
 - name: DB_USER
-  value: "postgres"
+  value: "{{ .Values.postgresql.auth.username }}"
+- name: DB_NAME
+  value: "{{ .Values.postgresql.auth.database }}"
+- name: DB_PASS
+  value: "{{ .Values.postgresql.auth.password }}"
 - name: SETTING_MEMCACHED_LOCATION
   value: "{{ template "common.names.fullname" .Subcharts.memcached }}:11211"
 - name: SETTING_RABBITMQ_HOST
@@ -86,7 +90,7 @@ include all env variables for Zulip pods
 - name: SECRETS_redis_password
   value: "{{ .Values.redis.auth.password }}"
 - name: SECRETS_secret_key
-  value: "{{ .Values.zulip.password }}"
+  value: "{{ .Values.zulip.secretkey }}"
 {{- range $key, $value := .Values.zulip.environment }}
 - name: {{ $key }}
   value: {{ $value | quote }}
