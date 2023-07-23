@@ -149,6 +149,18 @@ zulip:
     accessMode: ReadWriteOnce
     size: 10Gi
     # existingClaim: "" # Use an already existing PVC
+  autobackup:
+    enabled: false
+    storage:
+      # -- If `autobackup.storage.existingClaim` is not set, a PVC is generated with these
+      # specifications.
+      accessMode: ReadWriteOnce
+      size: 5Gi
+      # existingClaim: "" # Use an already existing PVC
+      annotations:
+        # -- By default this PVC will be kept on uninstall of the chart
+        helm.sh/resource-policy: "keep"
+
 
 # -- Liveness probe values.
 # Ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes

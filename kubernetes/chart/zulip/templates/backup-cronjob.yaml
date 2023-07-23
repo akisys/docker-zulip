@@ -1,0 +1,69 @@
+{{- if .Values.zulip.autobackup | default dict -}}
+{{- if .Values.zulip.autobackup.enabled | default false -}}
+{{- $autobackupImage := .Values.zulip.autobackup.image | default .Values.image.repository -}}
+{{- $autobackupImageTagDefault := .Values.image.tag | default .Chart.AppVersion -}}
+{{- $autobackupImageTag := .Values.zulip.autobackup.tag | default $autobackupImageTagDefault -}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ template "zulip.fullname" . }}-autobackup
+  labels:
+    {{- include "zulip.labels" . | nindent 4 }}
+{{- if .Values.zulip.autobackup.annotations | default dict }}
+  annotations:
+{{ toYaml .Values.zulip.autobackup.annotations | indent 4 }}
+{{- end }}
+spec:
+  jobTemplate:
+    metadata:
+      name: {{ template "zulip.fullname" . }}-autobackup
+    spec:
+      template:
+        spec:
+          volumes:
+          - name: {{ include "zulip.fullname" . }}-backup-storage
+            persistentVolumeClaim:
+              claimName: {{ if .Values.zulip.autobackup.existingClaim }}{{ .Values.zulip.autobackup.existingClaim }}{{- else }}{{ template "zulip.fullname" . }}-backups{{- end }}
+          initContainers:
+          - image: busybox
+            name: {{ template "zulip.fullname" . }}-prepbackup
+            command:
+              - sh
+              - -c
+              - |
+                mkdir -p /datastore/backups; chown 1000:1000 /datastore/backups;
+            volumeMounts:
+              - name: {{ include "zulip.fullname" . }}-backup-storage
+                mountPath: /datastore
+            securityContext:
+              runAsNonRoot: false
+              #runAsUser: 1000
+          containers:
+          - image: "{{ $autobackupImage }}:{{ $autobackupImageTag }}"
+            name: {{ template "zulip.fullname" . }}-autobackup
+            command:
+              - sh
+              - -c
+              - |
+                set -fue
+                TS="$(date -u +%Y%m%dT%H%M%S%z)";
+                PGPASSWORD="$DB_PASS" pg_dump -h "$DB_HOST" -p "$DB_HOST_PORT" -U "$DB_USER" -d "$DB_NAME" -w  > /tmp/dbdump.psql;
+                test -s /tmp/dbdump.psql && (cat /tmp/dbdump.psql | gzip -9 > "/datastore/backups/zulip-backup-${TS}.psql.gz"; rm -f /tmp/dbdump.psql; echo "Finished db dump.") || (echo "Failure in db dump."; exit 1);
+              #test -s /tmp/dbdump.psql && (tar -czv -C /tmp/ -f "/datastore/backups/zulip-backup-${TS}".tgz /tmp/dbdump.psql; rm -f /tmp/dbdump.psql; echo "Finished db dump.") || (echo "Failure in db dump."; exit 1);
+            env:
+              {{ include "zulip.env" . | nindent 14 }}
+            volumeMounts:
+              - name: {{ include "zulip.fullname" . }}-backup-storage
+                mountPath: /datastore
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1000
+            {{- if .Values.zulip.autobackup.resources | default dict }}
+            resources:
+              {{- toYaml .Values.zulip.autobackup.resources | nindent 14 }}
+            {{- end }}
+          restartPolicy: OnFailure
+  schedule: {{ .Values.zulip.autobackup.schedule | default "30 3 * * *" | quote }}
+
+{{- end }}
+{{- end }}

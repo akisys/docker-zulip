@@ -1,15 +1,16 @@
 {{- if .Values.zulip.persistence.enabled -}}
 {{- if not .Values.zulip.persistence.existingClaim -}}
+---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: {{ template "zulip.fullname" . }}-data
   labels:
     {{- include "zulip.labels" . | nindent 4 }}
-{{- if .Values.zulip.persistence.annotations }}
+  {{- if .Values.zulip.persistence.annotations }}
   annotations:
-{{ toYaml .Values.zulip.persistence.annotations | indent 4 }}
-{{- end }}
+    {{ toYaml .Values.zulip.persistence.annotations | indent 4 }}
+  {{- end }}
 spec:
   accessModes:
     - {{ .Values.zulip.persistence.accessMode | quote }}
@@ -23,5 +24,37 @@ spec:
   storageClassName: "{{ .Values.zulip.persistence.storageClass }}"
 {{- end }}
 {{- end }}
-{{- end -}}
-{{- end -}}
+{{- end }}
+{{- end }}
+
+
+{{ if .Values.zulip.autobackup | default dict -}}
+{{ if .Values.zulip.autobackup.enabled | default false -}}
+{{ if not .Values.zulip.autobackup.storage.existingClaim -}}
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ template "zulip.fullname" . }}-backups
+  labels:
+    {{- include "zulip.labels" . | nindent 4 }}
+  {{- if .Values.zulip.autobackup.storage.annotations }}
+  annotations:
+    {{ toYaml .Values.zulip.autobackup.storage.annotations | indent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.zulip.autobackup.storage.accessMode | quote }}
+  resources:
+    requests:
+      storage: {{ .Values.zulip.autobackup.storage.size | quote }}
+  {{- if .Values.zulip.autobackup.storage.storageClass }}
+  {{- if (eq "-" .Values.zulip.autobackup.storage.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: "{{ .Values.zulip.autobackup.storage.storageClass }}"
+  {{- end }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
